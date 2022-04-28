@@ -1,0 +1,77 @@
+version: "3"
+
+services:
+  www:
+    image: nginx:1.11.10
+    container_name: sf3_nginx
+    ports:
+        - "8801:80"
+    links:
+        - "engine:engine"
+    volumes:
+        - ".:/home/docker:ro"
+        - "./.docker/www/default.conf:/etc/nginx/conf.d/default.conf:ro"
+    networks:
+      - dev
+
+  engine:
+    build: ./.docker/engine/dev/
+    container_name: sf3_php
+    volumes:
+        - ".:/home/docker:rw"
+        - "./.docker/engine/dev/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro"
+        - "./.docker/engine/dev/zz-blackfire.ini:/usr/local/etc/php/conf.d/zz-blackfire.ini"
+    links:
+        - "db:db"
+    working_dir: "/home/docker"
+    networks:
+      - dev
+
+  db:
+    image: mysql:8.0.0
+    container_name: sf3_mysql
+    ports:
+        - "3306:3306"
+    environment:
+        - MYSQL_ROOT_PASSWORD=pass
+        - MYSQL_USER=user
+        - MYSQL_PASSWORD=pass
+        - MYSQL_DATABASE=tododb
+    volumes:
+      - "db-data:/var/lib/mysql"
+    networks:
+      - dev
+
+  phpmyadmin:
+      image: phpmyadmin
+      container_name: sf3_pmadmin
+      restart: always
+      depends_on:
+          - db
+      ports:
+          - 8080:80
+      environment:
+          PMA_HOST: db
+      networks:
+        - dev
+
+  blackfire_agent:
+    image: blackfire/blackfire
+    container_name: sf3-blackfire
+    ports: ["8707"]
+    restart: always
+    environment:
+      BLACKFIRE_LOG_LEVEL: 4
+      # variables over rided in docker-compose.override.yml
+      BLACKFIRE_SERVER_ID: <Your Server ID>
+      BLACKFIRE_SERVER_TOKEN: <Your Server Token>
+      BLACKFIRE_CLIENT_ID: <Your Client ID>
+      BLACKFIRE_CLIENT_TOKEN: <Your Client Token>    
+    networks:
+      - dev
+
+networks:
+  dev:
+
+volumes:
+  db-data:
