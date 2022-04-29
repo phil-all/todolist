@@ -33,6 +33,13 @@ class User implements UserInterface
     private $password;
 
     /**
+     * A non-persisted field that's used to create the encoded password.
+     *
+     * @var string
+     */
+    private $plainPassword;
+
+    /**
      * @ORM\Column(type="string", length=60, unique=true)
      * @Assert\NotBlank(message="Vous devez saisir une adresse email.")
      * @Assert\Email(message="Le format de l'adresse n'est pas correcte.")
@@ -49,9 +56,11 @@ class User implements UserInterface
         return $this->username;
     }
 
-    public function setUsername($username)
+    public function setUsername($username): self
     {
         $this->username = $username;
+
+        return $this;
     }
 
     public function getSalt()
@@ -64,9 +73,24 @@ class User implements UserInterface
         return $this->password;
     }
 
-    public function setPassword($password)
+    public function setPassword($password): self
     {
         $this->password = $password;
+
+        return $this;
+    }
+
+    public function getPlainPassword()
+    {
+        return $this->plainPassword;
+    }
+
+    public function setPlainPassword($plainPassword)
+    {
+        $this->plainPassword = $plainPassword;
+        // forces the object to look "dirty" to Doctrine. Avoids
+        // Doctrine *not* saving this entity, if only plainPassword changes
+        $this->password = null;
     }
 
     public function getEmail()
@@ -86,5 +110,6 @@ class User implements UserInterface
 
     public function eraseCredentials()
     {
+        $this->plainPassword = null;
     }
 }
