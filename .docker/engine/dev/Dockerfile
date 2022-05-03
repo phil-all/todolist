@@ -1,42 +1,64 @@
-FROM php:7.1.3-fpm
+FROM php:7.4-fpm
 
-ENV PHP_APCU_VERSION 5.1.8
-ENV PHP_XDEBUG_VERSION 2.5.0
-RUN apt-get update \
-    && apt-get install -y libicu-dev zlib1g-dev \
-    && docker-php-source extract \
-    && curl -L -o /tmp/apcu-$PHP_APCU_VERSION.tgz https://pecl.php.net/get/apcu-$PHP_APCU_VERSION.tgz \
-    && curl -L -o /tmp/xdebug-$PHP_XDEBUG_VERSION.tgz http://xdebug.org/files/xdebug-$PHP_XDEBUG_VERSION.tgz \
-    && tar xfz /tmp/apcu-$PHP_APCU_VERSION.tgz \
-    && tar xfz /tmp/xdebug-$PHP_XDEBUG_VERSION.tgz \
-    && rm -r \
-    /tmp/apcu-$PHP_APCU_VERSION.tgz \
-    /tmp/xdebug-$PHP_XDEBUG_VERSION.tgz \
-    && mv apcu-$PHP_APCU_VERSION /usr/src/php/ext/apcu \
-    && mv xdebug-$PHP_XDEBUG_VERSION /usr/src/php/ext/xdebug \
-    && docker-php-ext-install \
-    apcu \
-    intl \
-    mbstring \
-    mysqli \
-    pdo \
-    pdo_mysql \
-    xdebug \
-    zip \
-    && pecl install apcu_bc-1.0.3 \
-    && docker-php-source delete \
-    && php -r "readfile('https://getcomposer.org/installer');" | php -- --install-dir=/usr/local/bin --filename=composer \
-    && chmod +x /usr/local/bin/composer
+# add-ons and extensions for PHP
+RUN apt-get update && apt-get install -y \
+        git \
+        unzip \
+        openssl \
+        procps \
+        acl \
+        libicu-dev \
+        zlib1g-dev \
+        libzip-dev \
+        libxml2-dev \
+    --no-install-recommends && rm -r /var/lib/apt/lists/*
+RUN docker-php-ext-install \
+        mysqli \
+        pdo \
+        pdo_mysql \
+        zip
 
-# Install Blackfire PHP Probe
+# intl
+RUN apt-get -y update \
+        && apt-get install -y libicu-dev \
+        && docker-php-ext-configure intl \
+        && docker-php-ext-install intl
+
+# apcu
+RUN pecl install apcu \
+        && docker-php-ext-enable apcu
+RUN echo "extension=apcu.so" > /usr/local/etc/php/php.ini
+RUN echo "apc.enable_cli=1" > /usr/local/etc/php/php.ini
+RUN echo "apc.enable=1" > /usr/local/etc/php/php.ini
+
+# opcache
+RUN docker-php-ext-configure opcache --enable-opcache \
+        && docker-php-ext-install opcache
+
+# composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN composer self-update --2
+
+# xdebug
+RUN pecl install xdebug
+RUN docker-php-ext-enable xdebug
+RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "display_startup_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "display_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "xdebug.remote_enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "xdebug.remote_connect_back=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "xdebug.idekey=\"PHPSTORM\"" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "xdebug.remote_port=9001" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
+# Blackfire PHP Probe
 RUN version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
-    && architecture=$(uname -m) \
-    && curl -A "Docker" -o /tmp/blackfire-probe.tar.gz -D - -L -s https://blackfire.io/api/v1/releases/probe/php/linux/$architecture/$version \
-    && mkdir -p /tmp/blackfire \
-    && tar zxpf /tmp/blackfire-probe.tar.gz -C /tmp/blackfire \
-    && mv /tmp/blackfire/blackfire-*.so $(php -r "echo ini_get ('extension_dir');")/blackfire.so \
-    && printf "extension=blackfire.so\nblackfire.agent_socket=tcp://blackfire:8307\n" > $PHP_INI_DIR/conf.d/blackfire.ini \
-    && rm -rf /tmp/blackfire /tmp/blackfire-probe.tar.gz
+        && architecture=$(uname -m) \
+        && curl -A "Docker" -o /tmp/blackfire-probe.tar.gz -D - -L -s https://blackfire.io/api/v1/releases/probe/php/linux/$architecture/$version \
+        && mkdir -p /tmp/blackfire \
+        && tar zxpf /tmp/blackfire-probe.tar.gz -C /tmp/blackfire \
+        && mv /tmp/blackfire/blackfire-*.so $(php -r "echo ini_get ('extension_dir');")/blackfire.so \
+        && printf "extension=blackfire.so\nblackfire.agent_socket=tcp://blackfire:8707\n" > $PHP_INI_DIR/conf.d/blackfire.ini \
+        && rm -rf /tmp/blackfire /tmp/blackfire-probe.tar.gz
 
 # Permission fix (cf http://blog.michaelperrin.fr/2017/04/14/docker-for-mac-on-a-symfony-app/)
 RUN usermod -u 1000 www-data
