@@ -3,16 +3,17 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\UserRepository;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 /**
- * @ORM\Table("user")
- * @ORM\Entity
- * @UniqueEntity("email")
+ * @ORM\Entity(repositoryClass=UserRepository::class)
+ * @UniqueEntity(fields={"email"})
  */
-class User implements UserInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     /**
      * @ORM\Column(type="integer")
@@ -30,12 +31,12 @@ class User implements UserInterface
     /**
      * @ORM\Column(type="string", length=64)
      */
-    private mixed $password;
+    private ?string $password;
 
     /**
      * A non-persisted field that's used to create the encoded password.
      */
-    private mixed $plainPassword;
+    private ?string $plainPassword;
 
     /**
      * @ORM\Column(type="string", length=60, unique=true)
@@ -79,11 +80,21 @@ class User implements UserInterface
     }
 
     /**
+     * Returns the identifier for this user
+     *
+     * @return string
+     */
+    public function getUserIdentifier(): string
+    {
+        return $this->username;
+    }
+
+    /**
      * Get user password
      *
-     * @return mixed
+     * @return string|null
      */
-    public function getPassword(): mixed
+    public function getPassword(): ?string
     {
         return $this->password;
     }
@@ -91,11 +102,11 @@ class User implements UserInterface
     /**
      * set user password
      *
-     * @param mixed $password
+     * @param string|null $password
      *
      * @return self
      */
-    public function setPassword(mixed $password): self
+    public function setPassword(?string $password): self
     {
         $this->password = $password;
 
@@ -105,9 +116,9 @@ class User implements UserInterface
     /**
      * Get plainpassword
      *
-     * @return mixed
+     * @return string|null
      */
-    public function getPlainPassword(): mixed
+    public function getPlainPassword(): ?string
     {
         return $this->plainPassword;
     }
@@ -115,11 +126,11 @@ class User implements UserInterface
     /**
      * Set plainpassword
      *
-     * @param mixed $plainPassword
+     * @param string|null $plainPassword
      *
      * @return void
      */
-    public function setPlainPassword(mixed $plainPassword)
+    public function setPlainPassword(?string $plainPassword)
     {
         $this->plainPassword = $plainPassword;
         // forces the object to look "dirty" to Doctrine. Avoids
@@ -170,11 +181,12 @@ class User implements UserInterface
     }
 
     /**
-     * Get salt
+     * Get salt for password hasher old algorithm.
+     * Required by UserInterface but not used.
      *
-     * @return mixed
+     * @return string|null
      */
-    public function getSalt(): mixed
+    public function getSalt(): ?string
     {
         return null;
     }
