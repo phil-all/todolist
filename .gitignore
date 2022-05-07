@@ -12,7 +12,9 @@
 !var
 /vendor/
 
+/documentation/analysis/*
 /documentation/howto/*
+/documentation/trash/*
 /docker-compose.override.yml
 
 ###> symfony/framework-bundle ###

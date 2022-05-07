@@ -1,0 +1,13 @@
+stages:
+  - PHP
+
+test:
+  stage: PHP
+  image: php:8.1-fpm
+  cache:
+    paths:
+      - vendor/
+  before_script:
+    - bash gitlab-ci/docker_install.sh > /dev/null
+  script:
+    - ./vendor/bin/grumphp run

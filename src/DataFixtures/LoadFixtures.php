@@ -2,6 +2,7 @@
 
 namespace App\DataFixtures;
 
+use DateTime;
 use App\Entity\Task;
 use App\Entity\User;
 use Doctrine\Persistence\ObjectManager;
@@ -38,7 +39,7 @@ class LoadFixtures extends Fixture
             $task        = new Task();
             $now         = time();
             $diff        = rand(250, 29999999);
-            $date        = new \DateTime();
+            $date        = new DateTime();
             $publishDate = $date->setTimestamp(rand($now - $diff, $now));
 
             $task
