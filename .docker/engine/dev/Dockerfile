@@ -1,12 +1,14 @@
-FROM php:7.4-fpm
+FROM php:8.1-fpm
 
 # add-ons and extensions for PHP
 RUN apt-get update && apt-get install -y \
+        acl \
         git \
-        unzip \
+        nano \
         openssl \
         procps \
-        acl \
+        unzip \
+        wget \
         libicu-dev \
         zlib1g-dev \
         libzip-dev \
@@ -39,6 +41,9 @@ RUN docker-php-ext-configure opcache --enable-opcache \
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN composer self-update --2
 
+# Symfony CLI
+RUN wget https://get.symfony.com/cli/installer -O - | bash && mv /root/.symfony/bin/symfony /usr/local/bin/symfony
+
 # xdebug
 RUN pecl install xdebug
 RUN docker-php-ext-enable xdebug
@@ -59,6 +64,3 @@ RUN version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
         && mv /tmp/blackfire/blackfire-*.so $(php -r "echo ini_get ('extension_dir');")/blackfire.so \
         && printf "extension=blackfire.so\nblackfire.agent_socket=tcp://blackfire:8707\n" > $PHP_INI_DIR/conf.d/blackfire.ini \
         && rm -rf /tmp/blackfire /tmp/blackfire-probe.tar.gz
-
-# Permission fix (cf http://blog.michaelperrin.fr/2017/04/14/docker-for-mac-on-a-symfony-app/)
-RUN usermod -u 1000 www-data
