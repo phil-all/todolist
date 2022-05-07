@@ -51,7 +51,7 @@ grumphp:
       whitelist_patterns: []
       exclude: [/migrations/]
       report_format: ansi
-      ruleset: ["unusedcode"]
+      ruleset: ["cleancode"]
       triggered_by: ["php"]
   testsuites: []
   extensions: []
