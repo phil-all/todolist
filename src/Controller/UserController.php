@@ -4,15 +4,30 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Form\UserType;
+use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
 class UserController extends AbstractController
 {
+    /**
+     * @var UserRepository
+     */
+    private UserRepository $userRepository;
+
+    /**
+     * UserController constructor
+     *
+     * @param UserRepository $userRepository
+     */
+    public function __construct(UserRepository $userRepository)
+    {
+        $this->userRepository = $userRepository;
+    }
+
     /**
      * @Route("/users", name="user_list")
      *
@@ -21,7 +36,7 @@ class UserController extends AbstractController
     public function listAction(): Response
     {
         return $this->render('user/list.html.twig', [
-            'users' => $this->getDoctrine()->getRepository(User::class)->findAll()
+            'users' => $this->userRepository->findAll()
         ]);
     }
 
@@ -41,12 +56,10 @@ class UserController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $em = $this->getDoctrine()->getManager();
             $password = $passwordHasher->hashPassword($user, $user->getPassword());
             $user->setPassword($password);
 
-            $em->persist($user);
-            $em->flush();
+            $this->userRepository->create($user);
 
             $this->addFlash('success', "L'utilisateur a bien été ajouté.");
 
@@ -59,22 +72,23 @@ class UserController extends AbstractController
     /**
      * @Route("/users/{id}/edit", name="user_edit")
      *
-     * @param User    $user
-     * @param Request $request
+     * @param User                        $user
+     * @param Request                     $request
+     * @param UserPasswordHasherInterface $passwordHasher
      *
      * @return Response
      */
-    public function editAction(User $user, Request $request): Response
+    public function editAction(User $user, Request $request, UserPasswordHasherInterface $passwordHasher): Response
     {
         $form = $this->createForm(UserType::class, $user);
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $password = $this->get('security.password_encoder')->encodePassword($user, $user->getPassword());
+            $password = $passwordHasher->hashPassword($user, $user->getPassword());
             $user->setPassword($password);
 
-            $this->getDoctrine()->getManager()->flush();
+            $this->userRepository->update($user);
 
             $this->addFlash('success', "L'utilisateur a bien été modifié");
 

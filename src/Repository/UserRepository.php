@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\User;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
@@ -29,20 +30,53 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * Used to upgrade (rehash) the user's password automatically over time.
+     * Create a user
      *
-     * @param PasswordAuthenticatedUserInterface $user
+     * @param User $user
+     *
+     * @return void
+     */
+    public function create(User $user): void
+    {
+        $this->store($user);
+    }
+
+    /**
+     * Update a user
+     *
+     * @param User $user
+     *
+     * @return void
+     */
+    public function update(User $user): void
+    {
+        $this->store($user);
+    }
+
+    /**
+     * Used to upgrade (rehash) the user's password automatically over time.
+     * @codeCoverageIgnore
+     *
+     * @param PasswordAuthenticatedUserInterface|UserInterface $user
      * @param string                             $newHashedPassword
      *
      * @return void
      */
-    public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
-    {
+    public function upgradePassword(
+        PasswordAuthenticatedUserInterface|UserInterface $user,
+        string $newHashedPassword
+    ): void {
         if (!$user instanceof User) {
             throw new UnsupportedUserException(sprintf('Instances of "%s" are not supported.', \get_class($user)));
         }
 
         $user->setPassword($newHashedPassword);
+        $this->_em->persist($user);
+        $this->_em->flush();
+    }
+
+    private function store(User $user): void
+    {
         $this->_em->persist($user);
         $this->_em->flush();
     }
