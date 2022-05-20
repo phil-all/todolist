@@ -11,6 +11,7 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 /**
  * class LoadFixtures
  * @package App\DataFixtures\ORM
+ * @codeCoverageIgnore
  */
 class LoadFixtures extends Fixture
 {
@@ -23,32 +24,54 @@ class LoadFixtures extends Fixture
      */
     public function load(ObjectManager $manager): void
     {
-        for ($i = 0; $i < 50; $i++) {
+        for ($i = 0; $i < 15; $i++) {
             $user = new User();
-            $name = ($i === 0) ?  'admin' : 'user_' . $i;
+            $name = ($i === 0) ?  'admin_1' : 'user_' . ($i + 1);
 
             $user
                 ->setUsername($name)
                 ->setPassword('$2y$13$PsHRrTDnC5W5.0nZEpjen.URDZ8GF35KTRg30ang1ChTldsSh1QKu')
-                ->setEmail($name . '@example.com');
+                ->setEmail($name . '@example.com')
+                ->setRoles(($i === 0) ? ['ROLE_ADMIN'] : ['ROLE_USER']);
 
             $manager->persist($user);
-        }
 
-        for ($j = 0; $j < 250; $j++) {
-            $task        = new Task();
-            $now         = time();
-            $diff        = rand(250, 29999999);
-            $date        = new DateTime();
-            $publishDate = $date->setTimestamp(rand($now - $diff, $now));
+            // Attributed tasks
+            if ($name !== 'admin_1') {
+                for ($j = 0; $j < rand(1, 3); $j++) {
+                    $task        = new Task();
+                    $now         = time();
+                    $diff        = rand(250, 29999999);
+                    $date        = new DateTime();
+                    $publishDate = $date->setTimestamp(rand($now - $diff, $now));
 
-            $task
-                ->setCreatedAt($publishDate)
-                ->setTitle('Tache #' . rand(15, 500))
-                ->setContent($this->getRandomContent())
-                ->setIsDone($this->getRandomBoolean());
+                    $task
+                        ->setCreatedAt($publishDate)
+                        ->setTitle('Tache #' . rand(15, 500))
+                        ->setContent($this->getRandomContent())
+                        ->setIsDone($this->getRandomBoolean())
+                        ->setUser($user);
 
-                $manager->persist($task);
+                    $manager->persist($task);
+                }
+
+                // Anonym tasks
+                for ($j = 0; $j < rand(0, 2); $j++) {
+                    $task        = new Task();
+                    $now         = time();
+                    $diff        = rand(250, 29999999);
+                    $date        = new DateTime();
+                    $publishDate = $date->setTimestamp(rand($now - $diff, $now));
+
+                    $task
+                        ->setCreatedAt($publishDate)
+                        ->setTitle('Tache #' . rand(15, 500))
+                        ->setContent($this->getRandomContent())
+                        ->setIsDone($this->getRandomBoolean());
+
+                    $manager->persist($task);
+                }
+            }
         }
 
         $manager->flush();
