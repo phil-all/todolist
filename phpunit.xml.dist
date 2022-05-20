@@ -1,34 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- https://phpunit.readthedocs.io/en/latest/configuration.html -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="bin/.phpunit/phpunit.xsd"
          backupGlobals="false"
          colors="true"
          bootstrap="tests/bootstrap.php"
+         stopOnFailure="false"
 >
+    <coverage processUncoveredFiles="true"
+              cacheDirectory="/build/test-coverage"
+              pathCoverage="true"
+    >
+      <include>
+        <directory suffix=".php">src</directory>
+      </include>
+    </coverage>
+
     <php>
-        <ini name="display_errors" value="1" />
-        <ini name="error_reporting" value="-1" />
-        <server name="APP_ENV" value="test" force="true" />
-        <server name="SHELL_VERBOSITY" value="-1" />
-        <server name="SYMFONY_PHPUNIT_REMOVE" value="" />
-        <server name="SYMFONY_PHPUNIT_VERSION" value="7.5" />
+      <env name="APP_ENV" value="test" />
+      <ini name="display_errors" value="1" />
+      <ini name="error_reporting" value="-1" />
+      <server name="APP_ENV" value="test" force="true" />
+      <server name="SHELL_VERBOSITY" value="-1" />
+      <server name="SYMFONY_PHPUNIT_REMOVE" value="" />
+      <server name="SYMFONY_PHPUNIT_VERSION" value="9.5" />
     </php>
 
     <testsuites>
-        <testsuite name="Project Test Suite">
-            <directory>tests</directory>
-        </testsuite>
+      <testsuite name="Project Test Suite">
+        <directory suffix="Test.php">tests</directory>
+      </testsuite>
     </testsuites>
 
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
             <directory suffix=".php">src</directory>
         </whitelist>
+        <exclude>
+            <file>src/kernel.php</file>
+            <directory>src/DataFixtures</directory>
+        </exclude>
     </filter>
 
     <listeners>
-        <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener" />
+      <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener" />
     </listeners>
+
+    <extensions>
+        <extension class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension" />
+    </extensions>
 </phpunit>
