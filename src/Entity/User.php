@@ -2,8 +2,11 @@
 
 namespace App\Entity;
 
+use App\Entity\Task;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -20,13 +23,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="AUTO")
      */
-    private int $id;
+    private ?int $id = null;
 
     /**
      * @ORM\Column(type="string", length=25, unique=true)
-     * @Assert\NotBlank(message="Vous devez saisir un nom d'utilisateur.")
      */
-    private string $username;
+    private ?string $username;
 
     /**
      * @ORM\Column(type="string", length=64)
@@ -40,17 +42,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     /**
      * @ORM\Column(type="string", length=60, unique=true)
-     * @Assert\NotBlank(message="Vous devez saisir une adresse email.")
      * @Assert\Email(message="Le format de l'adresse n'est pas correcte.")
      */
-    private string $email;
+    private ?string $email;
+
+    /**
+     * @ORM\Column(type="json")
+     */
+    private array $roles = [];
+
+
+    /**
+     * @ORM\OneToMany(targetEntity=Task::class, mappedBy="user")
+     */
+    private Collection $tasks;
+
+    public function __construct()
+    {
+        $this->tasks = new ArrayCollection();
+    }
 
     /**
      * Get user id
      *
-     * @return integer
+     * return integer|null
      */
-    public function getId(): int
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -58,9 +75,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Get username
      *
-     * @return string
+     * @return string|null
      */
-    public function getUsername(): string
+    public function getUsername(): ?string
     {
         return $this->username;
     }
@@ -68,11 +85,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Set username
      *
-     * @param string $username
+     * @param string|null $username
      *
      * @return self
      */
-    public function setUsername(string $username): self
+    public function setUsername(?string $username): self
     {
         $this->username = $username;
 
@@ -128,22 +145,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      *
      * @param string|null $plainPassword
      *
-     * @return void
+     * @return self
      */
-    public function setPlainPassword(?string $plainPassword)
+    public function setPlainPassword(?string $plainPassword): self
     {
         $this->plainPassword = $plainPassword;
         // forces the object to look "dirty" to Doctrine. Avoids
         // Doctrine *not* saving this entity, if only plainPassword changes
         $this->password = null;
+
+        return $this;
     }
 
     /**
      * Get user email
      *
-     * @return string
+     * @return string|null
      */
-    public function getEmail(): string
+    public function getEmail(): ?string
     {
         return $this->email;
     }
@@ -151,13 +170,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * set user email
      *
-     * @param string $email
+     * @param string|null $email
      *
-     * @return void
+     * @return self
      */
-    public function setEmail(string $email)
+    public function setEmail(?string $email): self
     {
         $this->email = $email;
+
+        return $this;
     }
 
     /**
@@ -167,8 +188,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getRoles(): array
     {
-        return array('ROLE_USER');
+        $roles = $this->roles;
+
+        // guarantee every user at least has ROLE_USER
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
     }
+
+    /**
+     * Set roles
+     *
+     * @param array $roles
+     *
+     * @return self
+     */
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+
 
     /**
      * Erase user credentials
@@ -189,5 +230,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getSalt(): ?string
     {
         return null;
+    }
+
+    /**
+     * Get collection of user tasks
+     *
+     * @return Collection<int, Task>
+     */
+    public function getTasks(): Collection
+    {
+        return $this->tasks;
     }
 }

@@ -3,7 +3,8 @@
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Form\UserType;
+use App\Form\UserEditionType;
+use App\Form\UserCreationType;
 use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -51,7 +52,7 @@ class UserController extends AbstractController
     public function createAction(Request $request, UserPasswordHasherInterface $passwordHasher): Response
     {
         $user = new User();
-        $form = $this->createForm(UserType::class, $user);
+        $form = $this->createForm(UserCreationType::class, $user);
 
         $form->handleRequest($request);
 
@@ -80,7 +81,7 @@ class UserController extends AbstractController
      */
     public function editAction(User $user, Request $request, UserPasswordHasherInterface $passwordHasher): Response
     {
-        $form = $this->createForm(UserType::class, $user);
+        $form = $this->createForm(UserEditionType::class, $user);
 
         $form->handleRequest($request);
 

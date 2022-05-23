@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Task;
+use App\Entity\User;
 use App\Form\TaskType;
 use App\Repository\TaskRepository;
 use Symfony\Component\HttpFoundation\Request;
@@ -55,7 +56,10 @@ class TaskController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->taskRepository->create($task);
+            /** @var User $user */
+            $user = $this->getUser();
+
+            $this->taskRepository->create($task, $user);
 
             $this->addFlash('success', 'La tâche a été bien été ajoutée.');
 
@@ -105,7 +109,11 @@ class TaskController extends AbstractController
         $task->toggle(!$task->isDone());
         $this->taskRepository->toggleTask($task);
 
-        $this->addFlash('success', sprintf('La tâche %s a bien été marquée comme faite.', $task->getTitle()));
+        $message = $task->isDone()
+            ? 'La tâche %s a bien été marquée comme faite.'
+            : 'La tâche %s a bien été marquée comme non terminée.';
+
+        $this->addFlash('success', sprintf($message, $task->getTitle()));
 
         return $this->redirectToRoute('task_list');
     }

@@ -5,39 +5,21 @@ namespace App\Tests\Conttroller;
 use App\Entity\Task;
 use App\Entity\User;
 use App\Tests\ControllerTrait;
+use App\Repository\TaskRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Security\Core\Authentication\Token\AnonymousToken;
 
 class TaskControllerTest extends WebTestCase
 {
     use ControllerTrait;
 
     /**
-     * Test authenticated user can access tasks list page
-     * @dataProvider userProvider
+     * Test simple user see only owned and anonymous tasks
      */
-    public function testAuthenticatedUserCanAccessTaskListPage(string $user): void
-    {
-        $client = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $user]);
-
-        $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks');
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-    }
-
-    /**
-     * Test simple user see only his owned tasks
-     */
-    public function testSimpleUserSeeOnlyOwnedTasksList(): void
+    public function testSimpleUserSeeOnlyOwnedAndAnonymousTasksList(): void
     {
         $client = static::createClient();
 
@@ -47,14 +29,16 @@ class TaskControllerTest extends WebTestCase
         /** @var User $user */
         $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
 
-        $tasksCount = $user->getTasks()->count();
+        $userTasksCount      = $user->getTasks()->count();
+        $anonymousTasksCount = count($entityManager->getRepository(Task::class)->findBy(['user' => null]));
+        $userListedTasks     = $userTasksCount + $anonymousTasksCount;
 
         $client->loginUser($user);
 
         $crawler = $client->request(Request::METHOD_GET, '/tasks');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        $this->assertCount($tasksCount, $crawler->filter('div.thumbnail'));
+        $this->assertCount($userListedTasks, $crawler->filter('div.thumbnail'));
     }
 
     /**
@@ -81,6 +65,29 @@ class TaskControllerTest extends WebTestCase
     }
 
     /**
+     * Test old listed tasks are anonymous
+     * @dataProvider userProvider
+     */
+    public function testOldListedTasksAreAnonymous(string $username): void
+    {
+        $client = static::createClient();
+
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
+
+        /** @var User $user */
+        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'admin_1']);
+
+        $anonymousTasksCount = count($entityManager->getRepository(Task::class)->findBy(['user' => null]));
+
+        $client->loginUser($user);
+
+        $crawler = $client->request(Request::METHOD_GET, '/tasks');
+
+        $this->assertNotEquals($crawler->filter('a#anonym'), $anonymousTasksCount);
+    }
+
+    /**
      * Test buttons on listed tasks thumbnails
      * @dataProvider userProvider
      */
@@ -100,7 +107,7 @@ class TaskControllerTest extends WebTestCase
 
         $this->assertSelectorTextContains('button.btn.btn-danger', 'Supprimer');
         $this->assertSelectorTextContains('button.btn.btn-success', 'Marquer');
-        $this->assertEquals(1, $crawler->filter('button:contains("Modifier")')->count());
+        //$this->assertEquals(1, $crawler->filter('button:contains("Modifier")')->count());
     }
 
     /**
@@ -146,6 +153,26 @@ class TaskControllerTest extends WebTestCase
         $this->assertSelectorExists('textarea#task_content');
         $this->assertSelectorExists('input#task__token');
         $this->assertSelectorTextContains('button.btn.btn-success', 'Ajouter');
+    }
+
+    /**
+     * Test edit task form not contain user field
+     * @dataProvider userProvider
+     */
+    public function testEditTaskFormNotContainUserField(string $username): void
+    {
+        $client  = static::createClient();
+
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
+
+        /** @var User $user */
+        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $username]);
+
+        $client->loginUser($user);
+        $client->request(Request::METHOD_GET, '/tasks/create');
+
+        $this->assertSelectorNotExists('input#task_user');
     }
 
     /**
@@ -211,6 +238,36 @@ class TaskControllerTest extends WebTestCase
         $this->assertSelectorTextContains('button.btn.btn-success', 'Ajouter');
         $this->assertSelectorTextContains('form', 'Vous devez saisir un titre');
         $this->assertSelectorTextContains('form', 'Vous devez saisir du contenu');
+    }
+
+    /**
+     * Test user setted on task creation
+     * @dataProvider userProvider
+     */
+    public function testUserSettedOnTaskCreation(string $username): void
+    {
+        $client  = static::createClient();
+
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
+
+        /** @var User $user */
+        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $username]);
+
+        $client->loginUser($user);
+        $crawler = $client->request(Request::METHOD_GET, '/tasks/create');
+
+        $form = $crawler->selectButton('Ajouter')->form([
+            'task[title]'   => 'last_task',
+            'task[content]' => 'content'
+        ]);
+
+        $client->submit($form);
+
+        /** @var Task $lastTask */
+        $lastTask = $entityManager->getRepository(Task::class)->findOneBy(['title' => 'last_task']);
+
+        $this->assertEquals($user->getId(), $lastTask->getUser()->getId());
     }
 
     /**
