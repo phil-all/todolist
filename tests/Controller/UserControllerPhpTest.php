@@ -15,6 +15,26 @@ class UserControllerPhpTest extends WebTestCase
     use ControllerTrait;
 
     /**
+     * Test non admin user can not access administration
+     * @dataProvider adminPagesUrl
+     */
+    public function testNonAdminUserCanNotAccessAdministration(string $url): void
+    {
+        $client = static::createClient();
+
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
+
+        /** @var User $user */
+        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
+
+        $client->loginUser($user);
+        $client->request(Request::METHOD_GET, '/users');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+    }
+
+    /**
      * Test admin access users list
      */
     public function testAdminAccessUsersList(): void
@@ -40,25 +60,6 @@ class UserControllerPhpTest extends WebTestCase
     }
 
     /**
-     * Test simple user can't acces users list
-     */
-    public function testSimpeUserCanNotAccessUsersList(): void
-    {
-        $client = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
-
-        $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/users');
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
-    }
-
-    /**
      * Test admin can access user creation page
      */
     public function testAdminCanAccessUserCreationPage(): void
@@ -77,24 +78,6 @@ class UserControllerPhpTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
     }
 
-    /**
-     * Test simple user can not acces user creation page
-     */
-    public function testSimpleUserCanNotAccesUserCreationPage(): void
-    {
-        $client = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
-
-        $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/users/create');
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
-    }
 
     /**
      * Test user creation form fields and button
@@ -215,10 +198,9 @@ class UserControllerPhpTest extends WebTestCase
     }
 
     /**
-     * Test admin access all users edtion page
-     * @dataProvider userEditionUrlProvider
+     * Test admin access users edtion page
      */
-    public function testAdminAccessAllUsersEditionPage(string $url): void
+    public function testAdminAccessAllUsersEditionPage(): void
     {
         $client = static::createClient();
 
@@ -229,7 +211,7 @@ class UserControllerPhpTest extends WebTestCase
         $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'admin_1']);
 
         $client->loginUser($user);
-        $client->request(Request::METHOD_GET, $url);
+        $client->request(Request::METHOD_GET, '/users/3/edit');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
         $this->assertSelectorTextContains('form', 'Nom d\'utilisateur');
@@ -244,25 +226,6 @@ class UserControllerPhpTest extends WebTestCase
         $this->assertSelectorExists('input#user_edition_roles_0');
         $this->assertSelectorExists('input#user_edition_roles_1');
         $this->assertSelectorTextContains('button.btn.btn-success', 'Modifier');
-    }
-
-    /**
-     * Test simple user can't access edition page
-     */
-    public function testSimpleUserCanNotAccessUserEditionPage(): void
-    {
-        $client = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
-
-        $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/users/3/edit');
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
     /**

@@ -34,7 +34,7 @@ class LoadFixtures extends Fixture
 
             $task
                 ->setCreatedAt($publishDate)
-                ->setTitle('Anonym task #' . ($i + 1))
+                ->setTitle('Titre tâche #' . ($i + 1))
                 ->setContent($this->getRandomContent())
                 ->setIsDone($this->getRandomBoolean());
 
@@ -55,7 +55,25 @@ class LoadFixtures extends Fixture
             $manager->persist($user);
 
             // Attributed tasks
-            if ($name !== 'admin_1') {
+            if ($name !== 'admin_1' && $name === 'user_2') {
+                for ($k = 0; $k < 2; $k++) {
+                    $task        = new Task();
+                    $now         = time();
+                    $diff        = rand(250, 29999999);
+                    $date        = new DateTime();
+                    $publishDate = $date->setTimestamp(rand($now - $diff, $now));
+
+                    $task
+                        ->setCreatedAt($publishDate)
+                        ->setTitle('Titre tâche #' . ($j + 1))
+                        ->setContent($this->getRandomContent())
+                        ->setIsDone($k === 0 ? true : false)
+                        ->setUser($user);
+
+                    $manager->persist($task);
+                }
+            }
+            if ($name !== 'admin_1' && $name !== 'user_2') {
                 for ($k = 0; $k < rand(1, 3); $k++) {
                     $task        = new Task();
                     $now         = time();
@@ -74,7 +92,6 @@ class LoadFixtures extends Fixture
                 }
             }
         }
-
         $manager->flush();
     }
 

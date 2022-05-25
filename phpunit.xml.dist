@@ -32,15 +32,19 @@
       </testsuite>
     </testsuites>
 
-    <filter>
-        <whitelist processUncoveredFilesFromWhitelist="true">
-            <directory suffix=".php">src</directory>
-        </whitelist>
-        <exclude>
-            <file>src/kernel.php</file>
-            <directory>src/DataFixtures</directory>
-        </exclude>
-    </filter>
+<!-- 
+      <logging>
+      <include>
+        <directory suffix=".php">src</directory>
+      </include>
+      <exclude>
+          <directory>src/DataFixtures</directory>
+          <file>src/kernel.php</file>
+      </exclude>
+    </logging>
+-->
+
+
 
     <listeners>
       <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener" />

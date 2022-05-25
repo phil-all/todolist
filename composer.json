@@ -94,6 +94,7 @@
             "docker-compose up -d"
         ],
         "bash": [
+            "Composer\\Config::disableProcessTimeout",
             "docker exec -it sf5_php bash"
         ],
         "chown": [
@@ -120,6 +121,9 @@
         ],
         "test": [
             "./vendor/bin/phpunit --debug"
+        ],
+        "grump": [
+            "./vendor/bin/grumphp run"
         ]
     },
     "config": {

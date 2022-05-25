@@ -25,13 +25,38 @@ trait ControllerTrait
     }
 
     /**
+     * Provide tasks list url
+     *
+     * @return Genertator
+     */
+    private function tasksListUrlProvider(): Generator // @phpstan-ignore-line
+    {
+        yield ['/tasks/todo'];
+        yield ['/tasks/done'];
+    }
+
+    /**
+     * Provide admin pages url
+     *
+     * @return Generator
+     */
+    public function adminPagesUrl(): Generator
+    {
+        yield ['/users'];
+        yield ['/users/create'];
+        yield ['/users/3/edit'];
+        yield ['/users/3/delete'];
+    }
+
+    /**
      * Provide needed authentication uri list
      *
      * @return Generator
      */
     private function urlNeedAuthProvider(): Generator
     {
-        yield ['/tasks'];
+        yield ['/tasks/todo'];
+        yield ['/tasks/done'];
         yield ['/tasks/create'];
         yield ['/tasks/1/edit'];
         yield ['/tasks/1/toggle'];
@@ -39,12 +64,6 @@ trait ControllerTrait
         yield ['/users'];
         yield ['users/create'];
         yield ['/users/1/edit'];
-    }
-
-    private function userEditionUrlProvider(): Generator
-    {
-        yield ['/users/1/edit'];
-        yield ['/users/2/edit'];
     }
 
     private function isDoneProvider(): Generator

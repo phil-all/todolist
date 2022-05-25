@@ -32,7 +32,7 @@ class DefaultControllerTest extends WebTestCase
         $this->assertSelectorTextContains('a.btn.btn-danger', 'Se déconnecter');
         $this->assertSelectorTextContains('a.btn.btn-success', 'Créer une nouvelle tâche');
         $this->assertSelectorTextContains('a.btn.btn-info', 'Consulter la liste des tâches à faire');
-        $this->assertSelectorTextContains('a.btn.btn-secondary', 'Consulter la liste des tâches terminées');
+        $this->assertSelectorTextContains('a.btn.btn-warning', 'Consulter la liste des tâches terminées');
     }
 
     /**
