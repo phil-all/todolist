@@ -24,7 +24,22 @@ class LoadFixtures extends Fixture
      */
     public function load(ObjectManager $manager): void
     {
-        // // Anonym tasks
+        $this->createAnonymousTasks($manager);
+
+        $this->createUsersAndTasks($manager);
+
+        $manager->flush();
+    }
+
+    /**
+     * Create and persist anonymous tasks
+     *
+     * @param ObjectManager $manager
+     *
+     * @return void
+     */
+    private function createAnonymousTasks(ObjectManager $manager): void
+    {
         for ($i = 0; $i < 10; $i++) {
             $task        = new Task();
             $now         = time();
@@ -34,14 +49,43 @@ class LoadFixtures extends Fixture
 
             $task
                 ->setCreatedAt($publishDate)
-                ->setTitle('Titre tâche #' . ($i + 1))
+                ->setTitle('Tâche #' . ($i + 1))
                 ->setContent($this->getRandomContent())
-                ->setIsDone($this->getRandomBoolean());
+                ->setIsDone($i < 5 ? true : false);
 
             $manager->persist($task);
         }
+    }
 
-        // Users
+    private function createAttributedTasks(ObjectManager $manager, User $user, int $userIndex): void
+    {
+        for ($i = 0; $i < 3; $i++) {
+            $task        = new Task();
+            $now         = time();
+            $diff        = rand(250, 29999999);
+            $date        = new DateTime();
+            $publishDate = $date->setTimestamp(rand($now - $diff, $now));
+
+            $task
+                ->setCreatedAt($publishDate)
+                ->setTitle('Tâche #' . (rand(11, 100)))
+                ->setContent($this->getRandomContent())
+                ->setIsDone($i % 2 ? true : false)
+                ->setUser($user);
+
+            $manager->persist($task);
+        }
+    }
+
+    /**
+     * Create and persist users and their tasks
+     *
+     * @param ObjectManager $manager
+     *
+     * @return void
+     */
+    private function createUsersAndTasks(ObjectManager $manager): void
+    {
         for ($j = 0; $j < 10; $j++) {
             $user = new User();
             $name = ($j === 0) ?  'admin_1' : 'user_' . ($j + 1);
@@ -54,45 +98,10 @@ class LoadFixtures extends Fixture
 
             $manager->persist($user);
 
-            // Attributed tasks
-            if ($name !== 'admin_1' && $name === 'user_2') {
-                for ($k = 0; $k < 2; $k++) {
-                    $task        = new Task();
-                    $now         = time();
-                    $diff        = rand(250, 29999999);
-                    $date        = new DateTime();
-                    $publishDate = $date->setTimestamp(rand($now - $diff, $now));
-
-                    $task
-                        ->setCreatedAt($publishDate)
-                        ->setTitle('Titre tâche #' . ($j + 1))
-                        ->setContent($this->getRandomContent())
-                        ->setIsDone($k === 0 ? true : false)
-                        ->setUser($user);
-
-                    $manager->persist($task);
-                }
-            }
-            if ($name !== 'admin_1' && $name !== 'user_2') {
-                for ($k = 0; $k < rand(1, 3); $k++) {
-                    $task        = new Task();
-                    $now         = time();
-                    $diff        = rand(250, 29999999);
-                    $date        = new DateTime();
-                    $publishDate = $date->setTimestamp(rand($now - $diff, $now));
-
-                    $task
-                        ->setCreatedAt($publishDate)
-                        ->setTitle('Task #' . ($j + 1) . ' from ' . $name)
-                        ->setContent($this->getRandomContent())
-                        ->setIsDone($this->getRandomBoolean())
-                        ->setUser($user);
-
-                    $manager->persist($task);
-                }
+            if ($user->getUsername() !== 'admin_1') {
+                $this->createAttributedTasks($manager, $user, $j);
             }
         }
-        $manager->flush();
     }
 
     /**
@@ -117,15 +126,5 @@ class LoadFixtures extends Fixture
         ];
 
         return $content[rand(0, count($content) - 1)];
-    }
-
-    /**
-     * Get a random boolean
-     *
-     * @return boolean
-     */
-    private function getRandomBoolean(): bool
-    {
-        return rand(0, 1) === 1 ? true : false;
     }
 }

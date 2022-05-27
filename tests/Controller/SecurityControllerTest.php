@@ -10,7 +10,6 @@ class SecuritycontrollerTest extends WebTestCase
     use ControllerTrait;
 
     /**
-     * Test login with valid creadentials
      * @dataProvider userProvider
      */
     public function testAdminSubmitLoginForm(string $username): void
@@ -27,9 +26,6 @@ class SecuritycontrollerTest extends WebTestCase
         $this->assertResponseRedirects('/');
     }
 
-    /**
-     * Test login with invalid credentials
-     */
     public function testSubmitLoginFormWithBadCredentials(): void
     {
         $client  = static::createClient();

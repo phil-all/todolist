@@ -14,7 +14,8 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 /**
  * @ORM\Entity(repositoryClass=UserRepository::class)
- * @UniqueEntity(fields={"email"})
+ * @ORM\Table(name="user")
+ * @UniqueEntity(fields={"email", "username"})
  */
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {

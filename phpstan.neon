@@ -16,4 +16,7 @@ parameters:
 		-
 			message: '#^.*Genertator.*$#'
 			path: tests/ControllerTrait.php
+		-
+			message: '#.*getFlashBag.*#'
+			path: src/Security/LoginFormAuthenticator.php
 	reportUnmatchedIgnoredErrors: false

@@ -4,12 +4,13 @@ namespace App\Tests;
 
 use Generator;
 use App\Entity\User;
+//use Symfony\Component\DomCrawler\Form;
+use Doctrine\ORM\EntityRepository;
+//use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\DomCrawler\Form;
-use Symfony\Component\BrowserKit\Cookie;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Component\HttpFoundation\Session\Session;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
 trait ControllerTrait
 {
@@ -66,10 +67,26 @@ trait ControllerTrait
         yield ['/users/1/edit'];
     }
 
+    /**
+     * Provide task state
+     *
+     * @return Generator
+     */
     private function isDoneProvider(): Generator
     {
         yield [false];
         yield [true];
+    }
+
+    /**
+     * Provide a user role
+     *
+     * @return Generator
+     */
+    private function roleProvider(): Generator
+    {
+        yield ['ROLE_ADMIN'];
+        yield ['ROLE_USER'];
     }
 
     /**
@@ -89,26 +106,37 @@ trait ControllerTrait
         ]);
     }
 
-    // /**
-    //  * Generate a user session with cookie
-    //  *
-    //  * @param KernelBrowser $client
-    //  * @param User          $user
-    //  *
-    //  * @return void
-    //  */
-    // private function generateSession(KernelBrowser $client, User $user): void
-    // {
-    //     /** @var Session $session */
-    //     $session = $client->getContainer()->get('session');
+    /**
+     * Get a repository
+     *
+     * @param KernelBrowser $client
+     * @param string        $className
+     * @psalm-param class-string<T> $className
+     *
+     * @return EntityRepository
+     * @template T of object
+     */
+    public function getRepository(KernelBrowser $client, string $className): EntityRepository
+    {
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
 
-    //     $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
+        return $entityManager->getRepository($className);
+    }
 
-    //     $session->set('_security_main', serialize($token));
-    //     $session->save();
+    /**
+     * Get User from username
+     *
+     * @param KernelBrowser $client
+     * @param string        $userName
+     *
+     * @return User
+     */
+    private function getUser(KernelBrowser $client, string $userName): User
+    {
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
 
-    //     $client
-    //         ->getCookieJar()
-    //         ->set(new Cookie($session->getName(), $session->getId()));
-    // }
+        return $entityManager->getRepository(User::class)->findOneby(['username' => $userName]);
+    }
 }

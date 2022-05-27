@@ -13,13 +13,20 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 
+/**
+ * UserCreationType class
+ * @package App\Form
+ */
 class UserCreationType extends AbstractType
 {
+    /**
+     * @see AbstractType
+     */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('username', TextType::class, [
-                'label' => "Nom d'utilisateur",
+                'label'       => "Nom d'utilisateur",
                 'constraints' => [
                     new NotBlank([
                         'message' => 'Vous devez saisir un nom d\'utilisateur.'
@@ -39,7 +46,7 @@ class UserCreationType extends AbstractType
                 ]
             ])
             ->add('email', EmailType::class, [
-                'label' => 'Adresse email',
+                'label'       => 'Adresse email',
                 'constraints' => [
                     new NotBlank([
                         'message' => 'Vous devez saisir une adresse email.'

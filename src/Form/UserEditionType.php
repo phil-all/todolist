@@ -10,36 +10,29 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\PasswordType;
-use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 
+/**
+ * UserEditionType class
+ * @package App\Form
+ */
 class UserEditionType extends AbstractType
 {
+    /**
+     * @see AbstractType
+     */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('username', TextType::class, [
-                'label' => 'Nom d\'utilisateur',
+                'label'           => 'Nom d\'utilisateur',
                 'constraints'     => [
                     new NotBlank([
                         'message' => 'Vous devez saisir un nom d\'utilisateur.'
                     ])
                 ]
             ])
-            ->add('password', RepeatedType::class, [
-                'required'        => false,
-                'type'            => PasswordType::class,
-                'invalid_message' => 'Les deux mots de passe doivent correspondre.',
-                'first_options'   => ['label' => 'Mot de passe'],
-                'second_options'  => ['label' => 'Tapez le mot de passe à nouveau'],
-                'constraints'     => [
-                    new NotBlank([
-                        'message' => 'Vous devez saisir un mot de passe.'
-                    ])
-                ]
-            ])
             ->add('email', EmailType::class, [
-                'label' => 'Adresse email',
+                'label'       => 'Adresse email',
                 'constraints' => [
                     new NotBlank([
                         'message' => 'Vous devez saisir une adresse email.'

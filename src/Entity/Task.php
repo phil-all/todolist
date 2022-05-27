@@ -10,7 +10,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass=TaskRepository::class)
- * @ORM\Table
+ * @ORM\Table(name="task")
  */
 class Task
 {
@@ -91,9 +91,9 @@ class Task
     /**
      * Get task title
      *
-     * @return string
+     * @return string|null
      */
-    public function getTitle(): string
+    public function getTitle(): ?string
     {
         return $this->title;
     }
