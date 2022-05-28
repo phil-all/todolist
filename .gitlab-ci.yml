@@ -3,7 +3,7 @@ stages:
 
 test:
   stage: PHP
-  image: php:8.0
+  image: php:8.1
   cache:
     paths:
       - vendor/
