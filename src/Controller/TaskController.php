@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Task;
+use App\Entity\User;
 use App\Form\TaskType;
 use App\Repository\TaskRepository;
 use Symfony\Component\HttpFoundation\Request;
@@ -11,6 +12,10 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
+/**
+ * TaskController class
+ * @package App\Controller
+ */
 class TaskController extends AbstractController
 {
     /**
@@ -29,14 +34,19 @@ class TaskController extends AbstractController
     }
 
     /**
-     * @Route("/tasks", name="task_list")
+     * @Route("/tasks/todo", name="task_list_todo")
+     * @Route("/tasks/done", name="task_list_done")
+     *
+     * @param Request $request
      *
      * @return Response
      */
-    public function listAction(): Response
+    public function todoListAction(Request $request): Response
     {
+        $isDone = $request->attributes->get('_route') === 'task_list_done';
+
         return $this->render('task/list.html.twig', [
-            'tasks' => $this->taskRepository->findAll()
+            'tasks' => $this->taskRepository->findBy(['isDone' => $isDone])
         ]);
     }
 
@@ -55,11 +65,14 @@ class TaskController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->taskRepository->create($task);
+            /** @var User $user */
+            $user = $this->getUser();
+
+            $this->taskRepository->create($task, $user);
 
             $this->addFlash('success', 'La tâche a été bien été ajoutée.');
 
-            return $this->redirectToRoute('task_list');
+            return $this->redirectToRoute('task_list_todo');
         }
 
         return $this->render('task/create.html.twig', ['form' => $form->createView()]);
@@ -75,6 +88,8 @@ class TaskController extends AbstractController
      */
     public function editAction(Task $task, Request $request): Response
     {
+        $this->denyAccessUnlessGranted('TASK_EDIT', $task);
+
         $form = $this->createForm(TaskType::class, $task);
 
         $form->handleRequest($request);
@@ -84,7 +99,7 @@ class TaskController extends AbstractController
 
             $this->addFlash('success', 'La tâche a bien été modifiée.');
 
-            return $this->redirectToRoute('task_list');
+            return $this->redirectToRoute('task_list_todo');
         }
 
         return $this->render('task/edit.html.twig', [
@@ -96,33 +111,47 @@ class TaskController extends AbstractController
     /**
      * @Route("/tasks/{id}/toggle", name="task_toggle")
      *
-     * @param Task $task
+     * @param Request $request
+     * @param Task    $task
      *
      * @return RedirectResponse
      */
-    public function toggleTaskAction(Task $task): RedirectResponse
+    public function toggleTaskAction(request $request, Task $task): RedirectResponse
     {
+        $this->denyAccessUnlessGranted('TASK_TOGGLE', $task);
+
         $task->toggle(!$task->isDone());
         $this->taskRepository->toggleTask($task);
 
-        $this->addFlash('success', sprintf('La tâche %s a bien été marquée comme faite.', $task->getTitle()));
+        $message = $task->isDone()
+            ? 'La tâche %s a bien été marquée comme faite.'
+            : 'La tâche %s a bien été marquée comme non terminée.';
 
-        return $this->redirectToRoute('task_list');
+        $this->addFlash('success', sprintf($message, $task->getTitle()));
+
+        return str_contains($request->server->get('HTTP_REFERER'), '/tasks/done')
+            ? $this->redirectToRoute('task_list_done')
+            : $this->redirectToRoute('task_list_todo');
     }
 
     /**
      * @Route("/tasks/{id}/delete", name="task_delete")
      *
-     * @param Task $task
+     * @param Request $request
+     * @param Task    $task
      *
      * @return RedirectResponse
      */
-    public function deleteTaskAction(Task $task): RedirectResponse
+    public function deleteTaskAction(Request $request, Task $task): RedirectResponse
     {
+        $this->denyAccessUnlessGranted('TASK_DELETE', $task);
+
         $this->taskRepository->remove($task);
 
         $this->addFlash('success', 'La tâche a bien été supprimée.');
 
-        return $this->redirectToRoute('task_list');
+        return str_contains($request->server->get('HTTP_REFERER'), '/tasks/done')
+            ? $this->redirectToRoute('task_list_done')
+            : $this->redirectToRoute('task_list_todo');
     }
 }

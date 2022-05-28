@@ -14,25 +14,6 @@
         }
     },
     "require": {
-        "symfony/config": "5.4.*",
-        "symfony/dependency-injection": "5.4.*",
-        "symfony/http-kernel": "5.4.*",
-        "symfony/event-dispatcher": "5.4.*",
-        "symfony/error-handler": "5.4.*",
-        "symfony/routing": "5.4.*",
-        "symfony/options-resolver": "5.4.*",
-        "symfony/property-access": "5.4.*",
-        "symfony/property-info": "5.4.*",
-        "symfony/twig-bridge": "5.4.*",
-        "symfony/mime": "5.4.*",
-        "symfony/monolog-bridge": "5.4.*",
-        "symfony/security-csrf": "5.4.*",
-        "symfony/security-http": "5.4.*",
-        "symfony/security-guard": "5.4.*",
-        "symfony/security-core": "5.4.*",
-        "symfony/http-foundation": "5.4.*",
-        "symfony/doctrine-bridge": "5.4.*",
-        "symfony/cache": "5.4.*",
         "symfony/runtime": "5.4.*",
         "php": ">=7.4",
         "ext-ctype": "*",
@@ -47,13 +28,9 @@
         "symfony/flex": "^1.3.1",
         "symfony/form": "5.4.*",
         "symfony/framework-bundle": "5.4.*",
-        "symfony/http-client": "5.4.*",
-        "symfony/intl": "5.4.*",
-        "symfony/mailer": "5.4.*",
         "symfony/monolog-bundle": "^3.7",
         "symfony/proxy-manager-bridge": "5.4.*",
         "symfony/security-bundle": "5.4.*",
-        "symfony/translation": "5.4.*",
         "symfony/twig-bundle": "5.4.*",
         "symfony/validator": "5.4.*",
         "symfony/yaml": "5.4.*",
@@ -94,6 +71,7 @@
             "docker-compose up -d"
         ],
         "bash": [
+            "Composer\\Config::disableProcessTimeout",
             "docker exec -it sf5_php bash"
         ],
         "chown": [
@@ -102,13 +80,13 @@
         "setdb": [
             "php bin/console doctrine:database:drop --if-exists --force",
             "php bin/console doctrine:database:create",
-            "php bin/console doctrine:schema:update --force",
+            "php bin/console doctrine:migrations:migrate -n",
             "php bin/console doctrine:fixtures:load -n"
         ],
         "setdb-test": [
             "php bin/console doctrine:database:drop --if-exists --force --env=test",
             "php bin/console doctrine:database:create --env=test",
-            "php bin/console doctrine:schema:update --force --env=test",
+            "php bin/console doctrine:migrations:migrate -n --env=test",
             "php bin/console doctrine:fixtures:load -n --env=test"
         ],
         "test--coverage": [
@@ -120,6 +98,9 @@
         ],
         "test": [
             "./vendor/bin/phpunit --debug"
+        ],
+        "grump": [
+            "./vendor/bin/grumphp run"
         ]
     },
     "config": {

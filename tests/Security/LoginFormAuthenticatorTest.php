@@ -11,8 +11,6 @@ class LoginFormAuthenticatorTest extends WebTestCase
     use ControllerTrait;
 
     /**
-     * Test redirect unauthenticated user to login page for url needed authentication.
-     * See authenticator start() method.
      * @dataProvider urlNeedAuthProvider
      */
     public function testRedirectUnauthenticatedUserToLoginPage(string $uri): void

@@ -7,6 +7,10 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
+/**
+ * Securitycontroller class
+ * @package App\Controller
+ */
 class SecurityController extends AbstractController
 {
     /**

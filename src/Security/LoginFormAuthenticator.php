@@ -7,6 +7,7 @@ use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\RouterInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
@@ -24,23 +25,21 @@ class LoginFormAuthenticator extends AbstractAuthenticator implements Authentica
 
     public const HOME_ROUTE = 'homepage';
 
-    protected UserRepository $userRepository;
+    private UserRepository $userRepository;
 
-    protected RouterInterface $router;
+    private RouterInterface $router;
 
-    public function __construct(UserRepository $userRepository, RouterInterface $router)
+    protected RequestStack $requestStack;
+
+    public function __construct(UserRepository $userRepository, RouterInterface $router, RequestStack $requestStack)
     {
         $this->userRepository = $userRepository;
         $this->router         = $router;
+        $this->requestStack   = $requestStack;
     }
 
     /**
-     * Redirect anonymous user to login page
-     *
-     * @param Request                      $request
-     * @param AuthenticationException|null $authException
-     *
-     * @return Response
+     * @see AuthenticationEntryPointInterface
      */
     public function start(Request $request, AuthenticationException $authException = null): Response
     {
@@ -50,7 +49,7 @@ class LoginFormAuthenticator extends AbstractAuthenticator implements Authentica
     }
 
     /**
-     * Checks if authenticator have to be used
+     * @see AbstractAuthenticator
      */
     public function supports(Request $request): ?bool
     {
@@ -61,11 +60,7 @@ class LoginFormAuthenticator extends AbstractAuthenticator implements Authentica
     }
 
     /**
-     * Authenticate and return Passport
-     *
-     * @param Request $request
-     *
-     * @return Passport
+     * @see AbstractAuthenticator
      */
     public function authenticate(Request $request): Passport
     {
@@ -95,13 +90,7 @@ class LoginFormAuthenticator extends AbstractAuthenticator implements Authentica
     }
 
     /**
-     * Redirect to home page after authentication success
-     *
-     * @param Request        $request
-     * @param TokenInterface $token
-     * @param string         $firewallName
-     *
-     * @return Response|null
+     * @see AbstractAuthenticator
      */
     public function onAuthenticationSuccess(
         Request $request,
@@ -115,17 +104,14 @@ class LoginFormAuthenticator extends AbstractAuthenticator implements Authentica
     }
 
     /**
-     * Redirect to login page after authentication failure
-     *
-     * @param Request                 $request
-     * @param AuthenticationException $authenticationException
-     *
-     * @return Response
+     * @see AbstractAuthenticator
      */
     public function onAuthenticationFailure(
         Request $request,
         AuthenticationException $authenticationException
     ): Response {
+
+        $this->requestStack->getSession()->getFlashBag()->add('error', 'Attention: identifiants invalides');
 
         return new RedirectResponse(
             $this->router->generate(self::LOGIN_ROUTE)

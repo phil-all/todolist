@@ -10,7 +10,6 @@ class DefaultControllerTest extends WebTestCase
     use ControllerTrait;
 
     /**
-     * Test home page contain title and buttons visibles by all authenticated users
      * @dataProvider userProvider
      */
     public function testHomePageTitleAndButtonsVisiblesByAythenticatedUser(string $username): void
@@ -32,13 +31,10 @@ class DefaultControllerTest extends WebTestCase
         $this->assertSelectorTextContains('a.btn.btn-danger', 'Se déconnecter');
         $this->assertSelectorTextContains('a.btn.btn-success', 'Créer une nouvelle tâche');
         $this->assertSelectorTextContains('a.btn.btn-info', 'Consulter la liste des tâches à faire');
-        $this->assertSelectorTextContains('a.btn.btn-secondary', 'Consulter la liste des tâches terminées');
+        $this->assertSelectorTextContains('a.btn.btn-warning', 'Consulter la liste des tâches terminées');
     }
 
-    /**
-     * Test home page contain buttons visibles only by admin
-     */
-    public function testHomePageButtonsVisiblesOnlyByAdmin(): void
+    public function testAdminButtonVisiblesByAdmin(): void
     {
         $client  = static::createClient();
         $crawler = $client->request('GET', '/login');
@@ -53,6 +49,24 @@ class DefaultControllerTest extends WebTestCase
 
         $client->followRedirect();
 
-        $this->assertSelectorTextContains('a.btn.btn-primary', 'Créer un utilisateur');
+        $this->assertSelectorTextContains('a.btn.btn-primary', 'Gestion des utilisateurs');
+    }
+
+    public function testAdminButtonNotVisibleByNonAdminUser(): void
+    {
+        $client  = static::createClient();
+        $crawler = $client->request('GET', '/login');
+
+        $client->submit($this->getLoginForm(
+            'user_2',
+            'pass1234',
+            $crawler
+        ));
+
+        $this->assertResponseRedirects('/');
+
+        $client->followRedirect();
+
+        $this->assertSelectorTextNotContains('a.btn', 'Gestion des utilisateur');
     }
 }

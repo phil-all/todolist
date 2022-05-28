@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
         zlib1g-dev \
         libzip-dev \
         libxml2-dev \
-    --no-install-recommends && rm -r /var/lib/apt/lists/*
+        --no-install-recommends && rm -r /var/lib/apt/lists/*
 RUN docker-php-ext-install \
         mysqli \
         pdo \
@@ -50,10 +50,10 @@ RUN docker-php-ext-enable xdebug
 RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 RUN echo "display_startup_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 RUN echo "display_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-RUN echo "xdebug.remote_enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-RUN echo "xdebug.remote_connect_back=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "xdebug.mode = debug" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "xdebug.discover_client_host = true" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 RUN echo "xdebug.idekey=\"PHPSTORM\"" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-RUN echo "xdebug.remote_port=9001" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "integer xdebug.client_port" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 
 # Blackfire PHP Probe
 RUN version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
@@ -62,7 +62,6 @@ RUN version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
         && mkdir -p /tmp/blackfire \
         && tar zxpf /tmp/blackfire-probe.tar.gz -C /tmp/blackfire \
         && mv /tmp/blackfire/blackfire-*.so $(php -r "echo ini_get ('extension_dir');")/blackfire.so \
-        && printf "extension=blackfire.so\nblackfire.agent_socket=tcp://blackfire:8707\n" > $PHP_INI_DIR/conf.d/blackfire.ini \
         && rm -rf /tmp/blackfire /tmp/blackfire-probe.tar.gz
 
 # Permission fix (cf http://blog.michaelperrin.fr/2017/04/14/docker-for-mac-on-a-symfony-app/)

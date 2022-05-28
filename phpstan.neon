@@ -1,7 +1,5 @@
-# https://github.com/phpstan/phpstan-doctrine#configuration
-
-
 includes:
+	# https://github.com/phpstan/phpstan-doctrine#configuration
 	- vendor/phpstan/phpstan-doctrine/extension.neon
 
 parameters:
@@ -10,10 +8,15 @@ parameters:
 	level: 6
 	paths:
 		- src
-	excludePaths:
-		- tests/*/data/*
-		- tests/*/data-attributes/*
-		- tests/*/data-php-*/*
-		- tests/Rules/Doctrine/ORM/entity-manager.php
-
+		- tests
+	ignoreErrors:
+		-
+			message: '#Unreachable statement - code above always terminates.#'
+			path: src/Security/Voter/TaskVoter.php
+		-
+			message: '#^.*Genertator.*$#'
+			path: tests/ControllerTrait.php
+		-
+			message: '#.*getFlashBag.*#'
+			path: src/Security/LoginFormAuthenticator.php
 	reportUnmatchedIgnoredErrors: false

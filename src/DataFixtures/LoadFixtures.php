@@ -24,57 +24,84 @@ class LoadFixtures extends Fixture
      */
     public function load(ObjectManager $manager): void
     {
-        for ($i = 0; $i < 15; $i++) {
+        $this->createAnonymousTasks($manager);
+
+        $this->createUsersAndTasks($manager);
+
+        $manager->flush();
+    }
+
+    /**
+     * Create and persist anonymous tasks
+     *
+     * @param ObjectManager $manager
+     *
+     * @return void
+     */
+    private function createAnonymousTasks(ObjectManager $manager): void
+    {
+        for ($i = 0; $i < 10; $i++) {
+            $task        = new Task();
+            $now         = time();
+            $diff        = rand(250, 29999999);
+            $date        = new DateTime();
+            $publishDate = $date->setTimestamp(rand($now - $diff, $now));
+
+            $task
+                ->setCreatedAt($publishDate)
+                ->setTitle('Tâche #' . ($i + 1))
+                ->setContent($this->getRandomContent())
+                ->setIsDone($i < 5 ? true : false);
+
+            $manager->persist($task);
+        }
+    }
+
+    private function createAttributedTasks(ObjectManager $manager, User $user, int $userIndex): void
+    {
+        for ($i = 0; $i < 3; $i++) {
+            $task        = new Task();
+            $now         = time();
+            $diff        = rand(250, 29999999);
+            $date        = new DateTime();
+            $publishDate = $date->setTimestamp(rand($now - $diff, $now));
+
+            $task
+                ->setCreatedAt($publishDate)
+                ->setTitle('Tâche #' . (rand(11, 100)))
+                ->setContent($this->getRandomContent())
+                ->setIsDone($i % 2 ? true : false)
+                ->setUser($user);
+
+            $manager->persist($task);
+        }
+    }
+
+    /**
+     * Create and persist users and their tasks
+     *
+     * @param ObjectManager $manager
+     *
+     * @return void
+     */
+    private function createUsersAndTasks(ObjectManager $manager): void
+    {
+        for ($j = 0; $j < 10; $j++) {
             $user = new User();
-            $name = ($i === 0) ?  'admin_1' : 'user_' . ($i + 1);
+            $name = ($j === 0) ?  'admin_1' : 'user_' . ($j + 1);
 
             $user
                 ->setUsername($name)
                 ->setPassword('$2y$13$PsHRrTDnC5W5.0nZEpjen.URDZ8GF35KTRg30ang1ChTldsSh1QKu')
                 ->setEmail($name . '@example.com')
-                ->setRoles(($i === 0) ? ['ROLE_ADMIN'] : ['ROLE_USER']);
+                ->setRoles(($j === 0) ? ['ROLE_ADMIN'] : ['ROLE_USER']);
 
             $manager->persist($user);
 
-            // Attributed tasks
-            if ($name !== 'admin_1') {
-                for ($j = 0; $j < rand(1, 3); $j++) {
-                    $task        = new Task();
-                    $now         = time();
-                    $diff        = rand(250, 29999999);
-                    $date        = new DateTime();
-                    $publishDate = $date->setTimestamp(rand($now - $diff, $now));
-
-                    $task
-                        ->setCreatedAt($publishDate)
-                        ->setTitle('Tache #' . rand(15, 500))
-                        ->setContent($this->getRandomContent())
-                        ->setIsDone($this->getRandomBoolean())
-                        ->setUser($user);
-
-                    $manager->persist($task);
-                }
-
-                // Anonym tasks
-                for ($j = 0; $j < rand(0, 2); $j++) {
-                    $task        = new Task();
-                    $now         = time();
-                    $diff        = rand(250, 29999999);
-                    $date        = new DateTime();
-                    $publishDate = $date->setTimestamp(rand($now - $diff, $now));
-
-                    $task
-                        ->setCreatedAt($publishDate)
-                        ->setTitle('Tache #' . rand(15, 500))
-                        ->setContent($this->getRandomContent())
-                        ->setIsDone($this->getRandomBoolean());
-
-                    $manager->persist($task);
-                }
+            if ($user->getUsername() !== 'admin_1') {
+                $this->createAttributedTasks($manager, $user, $j);
             }
         }
-
-        $manager->flush();
     }
 
     /**
@@ -99,15 +126,5 @@ class LoadFixtures extends Fixture
         ];
 
         return $content[rand(0, count($content) - 1)];
-    }
-
-    /**
-     * Get a random boolean
-     *
-     * @return boolean
-     */
-    private function getRandomBoolean(): bool
-    {
-        return rand(0, 1) === 1 ? true : false;
     }
 }

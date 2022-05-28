@@ -4,12 +4,13 @@ namespace App\Tests;
 
 use Generator;
 use App\Entity\User;
+//use Symfony\Component\DomCrawler\Form;
+use Doctrine\ORM\EntityRepository;
+//use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\DomCrawler\Form;
-use Symfony\Component\BrowserKit\Cookie;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Component\HttpFoundation\Session\Session;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
 trait ControllerTrait
 {
@@ -25,13 +26,38 @@ trait ControllerTrait
     }
 
     /**
+     * Provide tasks list url
+     *
+     * @return Genertator
+     */
+    private function tasksListUrlProvider(): Generator // @phpstan-ignore-line
+    {
+        yield ['/tasks/todo'];
+        yield ['/tasks/done'];
+    }
+
+    /**
+     * Provide admin pages url
+     *
+     * @return Generator
+     */
+    public function adminPagesUrl(): Generator
+    {
+        yield ['/users'];
+        yield ['/users/create'];
+        yield ['/users/3/edit'];
+        yield ['/users/3/delete'];
+    }
+
+    /**
      * Provide needed authentication uri list
      *
      * @return Generator
      */
     private function urlNeedAuthProvider(): Generator
     {
-        yield ['/tasks'];
+        yield ['/tasks/todo'];
+        yield ['/tasks/done'];
         yield ['/tasks/create'];
         yield ['/tasks/1/edit'];
         yield ['/tasks/1/toggle'];
@@ -41,16 +67,26 @@ trait ControllerTrait
         yield ['/users/1/edit'];
     }
 
-    private function userEditionUrlProvider(): Generator
-    {
-        yield ['/users/1/edit'];
-        yield ['/users/2/edit'];
-    }
-
+    /**
+     * Provide task state
+     *
+     * @return Generator
+     */
     private function isDoneProvider(): Generator
     {
         yield [false];
         yield [true];
+    }
+
+    /**
+     * Provide a user role
+     *
+     * @return Generator
+     */
+    private function roleProvider(): Generator
+    {
+        yield ['ROLE_ADMIN'];
+        yield ['ROLE_USER'];
     }
 
     /**
@@ -70,26 +106,37 @@ trait ControllerTrait
         ]);
     }
 
-    // /**
-    //  * Generate a user session with cookie
-    //  *
-    //  * @param KernelBrowser $client
-    //  * @param User          $user
-    //  *
-    //  * @return void
-    //  */
-    // private function generateSession(KernelBrowser $client, User $user): void
-    // {
-    //     /** @var Session $session */
-    //     $session = $client->getContainer()->get('session');
+    /**
+     * Get a repository
+     *
+     * @param KernelBrowser $client
+     * @param string        $className
+     * @psalm-param class-string<T> $className
+     *
+     * @return EntityRepository
+     * @template T of object
+     */
+    public function getRepository(KernelBrowser $client, string $className): EntityRepository
+    {
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
 
-    //     $token = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
+        return $entityManager->getRepository($className);
+    }
 
-    //     $session->set('_security_main', serialize($token));
-    //     $session->save();
+    /**
+     * Get User from username
+     *
+     * @param KernelBrowser $client
+     * @param string        $userName
+     *
+     * @return User
+     */
+    private function getUser(KernelBrowser $client, string $userName): User
+    {
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
 
-    //     $client
-    //         ->getCookieJar()
-    //         ->set(new Cookie($session->getName(), $session->getId()));
-    // }
+        return $entityManager->getRepository(User::class)->findOneby(['username' => $userName]);
+    }
 }

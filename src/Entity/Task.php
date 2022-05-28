@@ -3,12 +3,14 @@
 namespace App\Entity;
 
 use DateTime;
+use App\Entity\User;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\TaskRepository;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * @ORM\Entity
- * @ORM\Table
+ * @ORM\Entity(repositoryClass=TaskRepository::class)
+ * @ORM\Table(name="task")
  */
 class Task
 {
@@ -17,7 +19,7 @@ class Task
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="AUTO")
      */
-    private int $id;
+    private ?int $id = null;
 
     /**
      * @ORM\Column(type="datetime")
@@ -28,18 +30,23 @@ class Task
      * @ORM\Column(type="string")
      * @Assert\NotBlank(message="Vous devez saisir un titre.")
      */
-    private string $title;
+    private ?string $title;
 
     /**
      * @ORM\Column(type="text")
      * @Assert\NotBlank(message="Vous devez saisir du contenu.")
      */
-    private string $content;
+    private ?string $content;
 
     /**
      * @ORM\Column(type="boolean")
      */
     private bool $isDone;
+
+    /**
+     * @ORM\ManyToOne(targetEntity=User::class, inversedBy="tasks")
+     */
+    private ?User $user;
 
     public function __construct()
     {
@@ -50,9 +57,9 @@ class Task
     /**
      * Get task id
      *
-     * @return int
+     * @return integer|null
      */
-    public function getId(): int
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -84,9 +91,9 @@ class Task
     /**
      * Get task title
      *
-     * @return string
+     * @return string|null
      */
-    public function getTitle(): string
+    public function getTitle(): ?string
     {
         return $this->title;
     }
@@ -94,11 +101,11 @@ class Task
     /**
      * Set task title
      *
-     * @param string $title
+     * @param string|null $title
      *
      * @return self
      */
-    public function setTitle(string $title): self
+    public function setTitle(?string $title): self
     {
         $this->title = $title;
 
@@ -118,11 +125,11 @@ class Task
     /**
      * Set task content
      *
-     * @param string $content
+     * @param string|null $content
      *
      * @return self
      */
-    public function setContent(string $content): self
+    public function setContent(?string $content): self
     {
         $this->content = $content;
 
@@ -144,15 +151,48 @@ class Task
      *
      * @param boolean $bool
      *
-     * @return void
+     * @return self
      */
-    public function setIsDone(bool $bool): void
+    public function setIsDone(bool $bool): self
     {
         $this->isDone = $bool;
+
+        return $this;
     }
 
-    public function toggle(mixed $flag): void
+    /**
+     * Toggle isDOne value
+     *
+     * @param boolean $flag
+     *
+     * @return void
+     */
+    public function toggle(bool $flag): void
     {
         $this->isDone = $flag;
+    }
+
+    /**
+     * Get task author
+     *
+     * @return User|null
+     */
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    /**
+     * Set task author
+     *
+     * @param User|null $user
+     *
+     * @return self
+     */
+    public function setUser(?User $user): self
+    {
+        $this->user = $user;
+
+        return $this;
     }
 }

@@ -1,0 +1,43 @@
+<div class="col-sm-4 col-lg-4 col-md-4">
+	<div class="thumbnail">
+		<div class="caption" style="background-color: #fffeee">
+			<p class="pull-right" style="color: gray">
+				{% if task.user == null %}
+					anonyme
+				{% else %}
+					{{ task.user.username }}
+				{% endif %}
+			</p>
+			<h4>
+				{% if is_granted("TASK_EDIT", task) %}
+					<a href="{{ path('task_edit', {'id' : task.id }) }}" {% if task.user == null %} id="anonym" {% endif %} style="font-weight: 600">
+						{{ task.title }}
+					</a>
+				{% else %}
+					<span style="font-weight: 600">{{ task.title }}</span>
+				{% endif %}
+			</h4>
+			<p>{{ task.content }}</p>
+			<div class="row">
+				<div>
+					{% if is_granted("TASK_TOGGLE", task) %}
+						<a href="{{ path('task_toggle', {'id' : task.id }) }}" class="btn btn-success btn-sm pull-right" style="margin: 0 12px">
+							{% if not task.isDone %}
+								Marquer comme terminée
+							{% else %}
+								Marquer comme non terminée
+							{% endif %}
+						{% endif %}
+					</a>
+				</div>
+				<div>
+					{% if is_granted("TASK_DELETE", task) %}
+						<a href="{{ path('task_delete', {'id' : task.id }) }}" class="btn btn-danger btn-sm pull-right" style="margin: 0 12px">
+							Supprimer
+						</a>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

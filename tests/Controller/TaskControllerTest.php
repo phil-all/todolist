@@ -5,7 +5,6 @@ namespace App\Tests\Conttroller;
 use App\Entity\Task;
 use App\Entity\User;
 use App\Tests\ControllerTrait;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -15,132 +14,82 @@ class TaskControllerTest extends WebTestCase
     use ControllerTrait;
 
     /**
-     * Test authenticated user can access tasks list page
      * @dataProvider userProvider
      */
-    public function testAuthenticatedUserCanAccessTaskListPage(string $user): void
+    public function testTodoTasksListPageContentAndAuthenticatedUsersAccess(string $userName): void
     {
         $client = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $user]);
+        $user = $this->getUser($client, $userName);
 
-        $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks');
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-    }
-
-    /**
-     * Test simple user see only his owned tasks
-     */
-    public function testSimpleUserSeeOnlyOwnedTasksList(): void
-    {
-        $client = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
-
-        $tasksCount = $user->getTasks()->count();
+        $tasksCount          = count($this->getRepository($client, Task::class)->findBy(['isDone' => false]));
+        $anonymousTasksCount = count($this->getRepository($client, Task::class)->findBy(['user' => null]));
 
         $client->loginUser($user);
 
-        $crawler = $client->request(Request::METHOD_GET, '/tasks');
+        $crawler = $client->request(Request::METHOD_GET, '/tasks/todo');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $this->assertSelectorTextContains('a.btn.btn-danger.log', 'Se déconnecter');
+        $this->assertSelectorTextContains('h1', 'Liste des tâches non terminées');
+        $this->assertSelectorExists('img.slide-image');
         $this->assertCount($tasksCount, $crawler->filter('div.thumbnail'));
+        $this->assertSelectorTextContains('a.btn.btn-success', 'Tâches terminées');
+        $this->assertSelectorTextContains('a.btn.btn-info', 'Nouvelle tâche');
+        $this->assertSelectorTextContains('a.btn.btn-danger.btn-sm', 'Supprimer');
+        $this->assertSelectorTextContains('a.btn.btn-success.btn-sm', 'Marquer comme terminée');
+        $this->assertSelectorTextNotContains('a.btn.btn-success.btn-sm', 'Marquer non terminée');
+        $this->assertNotEquals($tasksCount, $anonymousTasksCount);
     }
 
     /**
-     * Test admin see all users tasks
-     */
-    public function testAdminSeeAllTasksList(): void
-    {
-        $client = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'admin_1']);
-
-        $tasksCount = count($entityManager->getRepository(Task::class)->findAll());
-
-        $client->loginUser($user);
-
-        $crawler = $client->request(Request::METHOD_GET, '/tasks');
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        $this->assertCount($tasksCount, $crawler->filter('div.thumbnail'));
-    }
-
-    /**
-     * Test buttons on listed tasks thumbnails
      * @dataProvider userProvider
      */
-    public function testListedTaskThumbnailLinks(string $username): void
+    public function testDoneTasksListPageContentAndAuthenticatedUsersAccess(string $userName): void
+    {
+        $client = static::createClient();
+
+        /** @var User $user */
+        $user = $this->getUser($client, $userName);
+
+        $tasksCount          = count($this->getRepository($client, Task::class)->findBy(['isDone' => true]));
+        $anonymousTasksCount = count($this->getRepository($client, Task::class)->findBy(['user' => null]));
+
+        $client->loginUser($user);
+
+        $crawler = $client->request(Request::METHOD_GET, '/tasks/done');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $this->assertSelectorTextContains('a.btn.btn-danger.log', 'Se déconnecter');
+        $this->assertSelectorTextContains('h1', 'Liste des tâches faites');
+        $this->assertSelectorExists('img.slide-image');
+        $this->assertCount($tasksCount, $crawler->filter('div.thumbnail'));
+        $this->assertSelectorTextContains('a.btn.btn-warning', 'Tâches non terminées');
+        $this->assertSelectorTextContains('a.btn.btn-info', 'Nouvelle tâche');
+        $this->assertSelectorTextContains('a.btn.btn-danger.btn-sm', 'Supprimer');
+        $this->assertSelectorTextNotContains('a.btn.btn-success.btn-sm', 'Marquer comme terminée');
+        $this->assertSelectorTextContains('a.btn.btn-success.btn-sm', 'Marquer comme non terminée');
+        $this->assertNotEquals($tasksCount, $anonymousTasksCount);
+    }
+
+    /**
+     * @dataProvider userProvider
+     */
+    public function testCreateTaskPageContent(string $userName): void
     {
         $client  = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $username]);
-
-        $client->loginUser($user);
-
-        $crawler = $client->request(Request::METHOD_GET, '/tasks');
-
-        $this->assertSelectorTextContains('button.btn.btn-danger', 'Supprimer');
-        $this->assertSelectorTextContains('button.btn.btn-success', 'Marquer');
-        $this->assertEquals(1, $crawler->filter('button:contains("Modifier")')->count());
-    }
-
-    /**
-     * Test authenticated user can access task creation page
-     * @dataProvider userProvider
-     */
-    public function testAuthenticatedUserCanAccessTaskCreationPage(string $user): void
-    {
-        $client = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $user]);
-
-        $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks');
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-    }
-
-    /**
-     * Test create task form exist
-     * @dataProvider userProvider
-     */
-    public function testCreateTaskFormExist(string $username): void
-    {
-        $client  = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $username]);
+        $user = $this->getUser($client, $userName);
 
         $client->loginUser($user);
         $client->request(Request::METHOD_GET, '/tasks/create');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $this->assertSelectorTextContains('a.btn.btn-danger', 'Se déconnecter');
+        $this->assertSelectorTextContains('h1', 'Créer une nouvelle tâche');
+        $this->assertSelectorExists('img.slide-image');
         $this->assertSelectorExists('form');
         $this->assertSelectorExists('input#task_title');
         $this->assertSelectorExists('textarea#task_content');
@@ -149,18 +98,14 @@ class TaskControllerTest extends WebTestCase
     }
 
     /**
-     * Test create task form submit with valid datas
      * @dataProvider userProvider
      */
-    public function testCreateTaskFormSubmitWithValidDatas(string $username): void
+    public function testCreateTaskFormSubmitWithValidDatas(string $userName): void
     {
         $client  = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $username]);
+        $user = $this->getUser($client, $userName);
 
         $client->loginUser($user);
         $crawler = $client->request(Request::METHOD_GET, '/tasks/create');
@@ -172,7 +117,7 @@ class TaskControllerTest extends WebTestCase
 
         $client->submit($form);
 
-        $this->assertResponseRedirects('/tasks');
+        $this->assertResponseRedirects('/tasks/todo');
 
         $client->followRedirect();
 
@@ -180,18 +125,14 @@ class TaskControllerTest extends WebTestCase
     }
 
     /**
-     * Test create task form submit with blank datas
      * @dataProvider userProvider
      */
-    public function testCreateTaskFormSubmitWithBlankDatas(string $username): void
+    public function testCreateTaskFormSubmitWithBlankDatas(string $userName): void
     {
         $client  = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $username]);
+        $user = $this->getUser($client, $userName);
 
         $client->loginUser($user);
         $crawler = $client->request(Request::METHOD_GET, '/tasks/create');
@@ -214,81 +155,105 @@ class TaskControllerTest extends WebTestCase
     }
 
     /**
-     * Test authenticated user can access task edition page
      * @dataProvider userProvider
      */
-    public function testAuthenticatedUserCanAccessTaskEditionPage(string $user): void
+    public function testUserSettedOnTaskCreation(string $userName): void
+    {
+        $client  = static::createClient();
+
+        /** @var User $user */
+        $user = $this->getUser($client, $userName);
+
+        $client->loginUser($user);
+        $crawler = $client->request(Request::METHOD_GET, '/tasks/create');
+
+        $form = $crawler->selectButton('Ajouter')->form([
+            'task[title]'   => 'last_task',
+            'task[content]' => 'content'
+        ]);
+
+        $client->submit($form);
+
+        /** @var Task $lastTask */
+        $lastTask = $this->getRepository($client, Task::class)->findOneBy(['title' => 'last_task']);
+
+        $this->assertEquals($user->getId(), $lastTask->getUser()->getId());
+    }
+
+    public function testUsercanEditOwnTask(): void
     {
         $client = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $user]);
+        $user = $this->getUser($client, 'user_2');
+
+        /** @var Task $task */
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => $user]);
 
         $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks');
+        $client->request(Request::METHOD_GET, '/tasks/' . $task->getId() . '/edit');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
     }
 
     /**
-     * Test user can't edit other user task
-     */
-    public function testUserCanNotEditOtherUserTask(): void
-    {
-        $client  = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
-
-        $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks/1/edit');
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_FOUND);
-    }
-
-    /**
-     * Test admin can edit other user task
-     */
-    public function testAdminCanEditOtherUserTask(): void
-    {
-        $client  = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
-
-        $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks/1/edit');
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-    }
-
-    /**
-     * Test edit task form exist
      * @dataProvider userProvider
      */
-    public function testEditTaskFormExist(string $user): void
+    public function testUserCanNotEditOtherUserTask(string $userName): void
+    {
+        $client = static::createClient();
+
+        /** @var User $user */
+        $user = $this->getUser($client, $userName);
+
+        /** @var User $otherUser */
+        $otherUser = $this->getUser($client, 'user_3');
+
+        /** @var Task $task */
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => $otherUser]);
+
+        $client->loginUser($user);
+        $client->request(Request::METHOD_GET, '/tasks/' . $task->getId() . '/edit');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+    }
+
+    public function testUserCanNotEditAnonymousTask(): void
+    {
+        $client = static::createClient();
+
+        /** @var User $user */
+        $user = $this->getUser($client, 'user_2');
+
+        /** @var Task $task */
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => null]);
+
+        $client->loginUser($user);
+        $client->request(Request::METHOD_GET, '/tasks/' . $task->getId() . '/edit');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+    }
+
+    /**
+     * @dataProvider userProvider
+     */
+    public function testEditTaskPageContentAndAuthenticatedOwnerAccess(string $user): void
     {
         $client  = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $user]);
+        $user = $this->getUser($client, 'user_2');
+
+        /** @var Task $task */
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => $user]);
 
         $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks/1/edit');
+        $client->request(Request::METHOD_GET, '/tasks/' . $task->getId() . '/edit');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $this->assertSelectorTextContains('a.btn.btn-danger', 'Se déconnecter');
+        $this->assertSelectorTextContains('h1', 'Modifier ' . $task->getTitle());
+        $this->assertSelectorExists('img.slide-image');
         $this->assertSelectorExists('form');
         $this->assertSelectorExists('input#task_title');
         $this->assertSelectorExists('textarea#task_content');
@@ -296,22 +261,18 @@ class TaskControllerTest extends WebTestCase
         $this->assertSelectorTextContains('button.btn.btn-success', 'Modifier');
     }
 
-    /**
-     * Test edit task form submit with valid datas
-     * @dataProvider userProvider
-     */
-    public function testEditTaskFormWithValidDatas(string $user): void
+    public function testEditTaskFormWithValidDatas(): void
     {
         $client  = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $user]);
+        $user = $this->getUser($client, 'user_3');
+
+        /** @var Task $task */
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => $user]);
 
         $client->loginUser($user);
-        $crawler = $client->request(Request::METHOD_GET, '/tasks/1/edit');
+        $crawler = $client->request(Request::METHOD_GET, '/tasks/' . $task->getId() . '/edit');
 
         $form = $crawler->selectButton('Modifier')->form([
             'task[title]'   => 'new title',
@@ -320,7 +281,7 @@ class TaskControllerTest extends WebTestCase
 
         $client->submit($form);
 
-        $this->assertResponseRedirects('/tasks');
+        $this->assertResponseRedirects('/tasks/todo');
 
         $client->followRedirect();
 
@@ -328,21 +289,20 @@ class TaskControllerTest extends WebTestCase
     }
 
     /**
-     * Test edit task form submit with blank datas
      * @dataProvider userProvider
      */
     public function testEditTaskFormWithBlankDatas(string $user): void
     {
         $client  = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => $user]);
+        $user = $this->getUser($client, 'user_2');
+
+        /** @var Task $task */
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => $user]);
 
         $client->loginUser($user);
-        $crawler = $client->request(Request::METHOD_GET, '/tasks/1/edit');
+        $crawler = $client->request(Request::METHOD_GET, '/tasks/' . $task->getId() . '/edit');
 
         $form = $crawler->selectButton('Modifier')->form([
             'task[title]'   => '',
@@ -353,176 +313,130 @@ class TaskControllerTest extends WebTestCase
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
         $this->assertSelectorExists('form');
-        $this->assertSelectorExists('input#task_title');
-        $this->assertSelectorExists('textarea#task_content');
-        $this->assertSelectorExists('input#task__token');
-        $this->assertSelectorTextContains('button.btn.btn-success', 'Modifier');
         $this->assertSelectorTextContains('form', 'Vous devez saisir un titre');
         $this->assertSelectorTextContains('form', 'Vous devez saisir du contenu');
     }
 
     /**
-     * Test authenticated simple user can toogle own task status
      * @dataProvider isDoneProvider
      */
-    public function testAuthenticatedSimpleUserCanToggleTaskStatus(bool $isDone): void
+    public function testUserCanToggleOwnTask(bool $isDone): void
     {
         $client = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
+        $user = $this->getUser($client, 'user_2');
 
         /** @var Task $task */
-        $task = $entityManager->getRepository(Task::class)->find(1);
+        $task = $this->getRepository($client, Task::class)->findOneby(['isDone' => $isDone, 'user' => $user]);
 
-        $task->setIsDone($isDone);
-
-        $taskState = $task->isDone();
+        $taskStateBeforeToggle = $task->isDone();
 
         $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks/1/toggle');
+        $client->request(Request::METHOD_GET, '/tasks/' . $task->getId() . '/toggle');
 
         /** @var Task $toggledTask */
-        $toggledTask = $entityManager->getRepository(Task::class)->find(1);
+        $toggledTask = $this->getRepository($client, Task::class)->find($task->getId());
 
-        $this->assertEquals(!$taskState, $toggledTask->isDone());
-        $this->assertResponseRedirects('/tasks');
+        $taskStateAftertoggle = $toggledTask->isdone();
+
+        $this->assertNotEquals($taskStateBeforeToggle, $taskStateAftertoggle);
+        $this->assertResponseRedirects();
 
         $client->followRedirect();
 
-        $flashMessage = !$taskState ? 'marquée comme faite.' : 'marquée comme non terminée';
-
-        $this->assertSelectorTextContains('div.alert.alert-success', $flashMessage);
+        $this->assertSelectorExists('div.alert.alert-success');
     }
 
-    /**
-     * Test authenticated simple user can't toogle other user task
-     */
-    public function testAuthenticatedSimpleUserCanNotToggleOtherUserTask(): void
+    public function testUserCanNotToggleOtherUserTask(): void
     {
         $client = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
+        $user = $this->getUser($client, 'user_2');
 
-        $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks/1/toggle');
-
-        $this->assertResponseRedirects('/tasks');
-        $this->assertSelectorTextContains('div.alert', 'Vous n\'êtes pas authorisé à effectuer cette action');
-    }
-
-    /**
-     * Test admin can toogle other user task
-     */
-    public function testAdminCanToggleOtherUserTask(): void
-    {
-        $client = static::createClient();
-
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
-        /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'admin_1']);
+        /** @var User $otherUser */
+        $otherUser = $this->getUser($client, 'user_5');
 
         /** @var Task $task */
-        $task = $entityManager->getRepository(Task::class)->find(1);
-
-        $taskState = $task->isDone();
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => $otherUser]);
 
         $client->loginUser($user);
+        $client->request(Request::METHOD_GET, ('/tasks/' . $task->getId() . '/toggle'));
 
-        $client->request(Request::METHOD_GET, '/tasks/1/toggle');
+        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+    }
 
-        /** @var Task $toggledTask */
-        $toggledTask = $entityManager->getRepository(Task::class)->find(1);
+    public function testUserCanDeleteOwnTask(): void
+    {
+        $client = static::createClient();
 
-        $this->assertEquals(!$taskState, $toggledTask->isDone());
-        $this->assertResponseRedirects('/tasks');
+        /** @var User $user */
+        $user = $this->getUser($client, 'user_2');
+
+        /** @var Task $task */
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => $user]);
+
+        $client->loginUser($user);
+        $client->request(Request::METHOD_GET, '/tasks/' . $task->getId() . '/delete');
+
+        $this->assertNull($task->getId());
+        $this->assertResponseRedirects('/tasks/todo');
 
         $client->followRedirect();
 
-        $flashMessage = !$taskState ? 'marquée comme faite.' : 'marquée comme non terminée';
-
-        $this->assertSelectorTextContains('div.alert.alert-success', $flashMessage);
+        $this->assertSelectorTextContains('div.alert.alert-success', 'La tâche a bien été supprimée.');
     }
 
-    /**
-     * Test simple user can delete own task
-     */
-    public function testSimpleUserCanDeleteOwnTask(): void
+    public function testUserCanNotDeleteOtherUserTask(): void
     {
         $client = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
+        $user = $this->getUser($client, 'user_2');
+
+        /** @var User $otherUser */
+        $otherUser = $this->getUser($client, 'user_3');
+
+        /** @var Task $task */
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => $otherUser]);
 
         $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks/1/delete');
+        $client->request(Request::METHOD_GET, ('/tasks/' . $task->getId() . '/delete'));
 
-        $this->assertResponseRedirects('/tasks');
-
-        $client->followRedirects();
-
-        $deletedTask = $entityManager->getRepository(Task::class)->find(1);
-
-        $this->assertEquals(null, $deletedTask);
-        $this->assertSelectorTextContains('div.alert', 'La tâche a bien été supprimée');
+        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
     }
 
-    /**
-     * Test simple user can't delete other user task
-     */
-    public function testSimpleUserCanNotDeleteOtherUserTask(): void
+    public function testNonAdminUserCanNotDeleteAnonymousTask(): void
     {
         $client = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'user_2']);
+        $user = $this->getUser($client, 'user_2');
+
+        /** @var Task $task */
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => null]);
 
         $client->loginUser($user);
+        $client->request(Request::METHOD_GET, ('/tasks/' . $task->getId() . '/delete'));
 
-        $client->request(Request::METHOD_GET, '/tasks/1/delete');
-
-        $this->assertResponseRedirects('/tasks');
-        $this->assertSelectorTextContains('div.alert', 'Vous n\'êtes pas authorisé à effectuer cette action');
+        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
     }
 
-    /**
-     * Test admin can delete other user task
-     */
-    public function testAdminCanDeleteOtherUserTask(): void
+    public function testAdminCanDeleteAnonymousTask(): void
     {
         $client = static::createClient();
 
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
-
         /** @var User $user */
-        $user = $entityManager->getRepository(User::class)->findOneby(['username' => 'admin_1']);
+        $user = $this->getUser($client, 'admin_1');
+
+        /** @var Task $task */
+        $task = $this->getRepository($client, Task::class)->findOneby(['user' => null]);
 
         $client->loginUser($user);
-        $client->request(Request::METHOD_GET, '/tasks/1/delete');
+        $client->request(Request::METHOD_GET, ('/tasks/' . $task->getId() . '/delete'));
 
-        $this->assertResponseRedirects('/tasks');
-
-        $client->followRedirects();
-
-        $deletedTask = $entityManager->getRepository(Task::class)->find(1);
-
-        $this->assertEquals(null, $deletedTask);
-        $this->assertSelectorTextContains('div.alert.alert-success', 'La tâche a bien été supprimée');
+        $this->assertResponseRedirects();
+        $this->assertNull($task->getId());
     }
 }
