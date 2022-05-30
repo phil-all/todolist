@@ -1,6 +1,8 @@
 ![Library logo](documentation/readme-img/gitlab.jpg)
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/7acc790b38794896af831b263fe2535e)](https://www.codacy.com/gl/phil-all/todolist/dashboard?utm_source=gitlab.com&utm_medium=referral&utm_content=phil-all/todolist&utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/7acc790b38794896af831b263fe2535e)](https://www.codacy.com/gl/phil-all/todolist/dashboard?utm_source=gitlab.com&utm_medium=referral&utm_content=phil-all/todolist&utm_campaign=Badge_Grade)   ![coverage report](https://img.shields.io/badge/coverage-100%25-brightgreen)   [![pipeline status](https://gitlab.com/phil-all/todolist/badges/main/pipeline.svg)](https://gitlab.com/phil-all/todolist/-/commits/main)
+
+* * *
 
 ## Table of contents
 
@@ -45,8 +47,26 @@ To be installed, ans used, this project requires:
 First, clone project repository, and then install packages.
 
 ```bash
-git clone git@gitlab.com:phil-all/todolist.git todolist && \
+git clone git@gitlab.com:phil-all/todolist.git todolist
+```
+
+Install packages, and answer `no` to all recipes.
+
+```bash
 composer install
+```
+
+Due to doctrine deprecation, update twice composer to fix it.
+
+```bash
+composer update && \
+composer update
+```
+
+Optimize autoloading
+
+```bash
+composer dump-autoload --optimize
 ```
 
 Create your own development environment file `.env.local`, with docker database settings:
@@ -55,19 +75,19 @@ Create your own development environment file `.env.local`, with docker database 
 DATABASE_URL="mysql://user:pass@db:3306/tododb?serverVersion=8.0"
 ```
 
-Build and start **dockerized environment**:
+Build and start **dockerized environment**.
 
 ```bash
 composer docker
 ```
 
-Launch the dockerized **development and testing bash**:
+Launch the dockerized **development and testing bash**.
 
 ```bash
 composer bash
 ```
 
-Ensure `permissions` well setted:
+Ensure `permissions` well setted.
 
 ```bash
 composer chown
@@ -79,6 +99,8 @@ Then, create development database, create test database and load the fixtures in
 composer setdb && \
 composer setdb-test
 ```
+
+* * *
 
 ## :wrench: Configuration
 
@@ -122,6 +144,15 @@ dama_doctrine_test:
 </phpunit>
 ```
 
+### Demo users
+
+| username | password |
+| -------- | -------- |
+| admin_1  | pass1234 |
+| user_2   | pass1234 |
+
+* * *
+
 ## :white_check_mark: Tests bash custom commands
 
 -   Make tests with debug option:
@@ -141,6 +172,8 @@ composer test--coverage
 ```bash
 composer test--dox
 ```
+
+* * *
 
 ## :bookmark: Actual release
 
@@ -169,6 +202,8 @@ This project **improve a legacy** existing one ([todolist](https://github.com/sa
     -   Only admin can create a user
 -   Tests.
 
+* * *
+
 ## :heavy_plus_sign: Third party dependencies and bundles
 
 **Code quality**
@@ -182,6 +217,8 @@ This project **improve a legacy** existing one ([todolist](https://github.com/sa
 
 -   phpunit
 -   dama/doctrine-test-bundle
+
+* * *
 
 ## :whale: Docker stack
 

@@ -21,6 +21,7 @@
 /documentation/uml/**/*.uxf
 /documentation/uml/**/*.mwb*
 /docker-compose.override.yml
+*.odt
 ###< own ###
 
 ###> symfony/framework-bundle ###
